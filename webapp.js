@@ -239,15 +239,17 @@ function registerEvents(emitter) {
     //
     function forkProc(cwd, cmd, args, cb) {
       var env = process.env
+        , phase = 'strider';
       if (data.repo_config.env !== undefined) {
         mergeObj(data.repo_config.env, env)
       }
       if (typeof(cwd) === 'object') {
         cb = cmd
-        var cmd = cwd.cmd
-        var args = cwd.args
+        cmd = cwd.cmd
+        args = cwd.args
+        phase = cwd.phase
         // Merge/override any variables
-        mergeObj(cwd.env, env)
+        if (cwd.env) mergeObj(cwd.env, env)
         cwd = cwd.cwd
       }
       if (typeof(cmd) === 'string' && typeof(args) === 'function') {
@@ -277,7 +279,7 @@ function registerEvents(emitter) {
         // the first output is just a regurgitation of the input
         if (first) {
           first = false;
-          buf = '\u001b[35mstrider $\u001b[0m \u001b[33m' + buf + '\u001b[0m\n';
+          buf = '\u001b[35m[' + phase + '] $\u001b[0m \u001b[33m' + buf + '\u001b[0m\n';
           proc.stdoutBuffer += buf
           proc.stdmergedBuffer += buf
           stdoutBuffer += buf
@@ -413,7 +415,12 @@ function registerEvents(emitter) {
                 var psh = shellWrap(result[phase])
                 hook = function(context, cb) {
                   logger.debug("running shell command hook for phase %s: %s", phase, result[phase])
-                  forkProc(workingDir, psh.cmd, psh.args, cb)
+                  forkProc({
+                    cwd: workingDir,
+                    cmd: psh.cmd,
+                    args: psh.args,
+                    phase: phase
+                  }, cb)
                 }
               }
 
